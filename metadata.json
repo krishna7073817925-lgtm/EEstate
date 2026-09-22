@@ -1,0 +1,8 @@
+{
+  "name": "EEstates Agency",
+  "description": "Find your perfect property, browse houses, apartments, and plots, book viewings, and list real estate with EEstates Agency.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

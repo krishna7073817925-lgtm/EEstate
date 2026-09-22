@@ -1,0 +1,98 @@
+{
+  "entities": {
+    "Property": {
+      "title": "Property",
+      "description": "A real estate property listing including houses, apartments, and plots.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 3, "maxLength": 120 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "price": { "type": "number" },
+        "priceType": { "type": "string", "enum": ["total", "month"] },
+        "location": { "type": "string", "minLength": 2, "maxLength": 150 },
+        "category": { "type": "string", "enum": ["House", "Apartment", "Plot"] },
+        "status": { "type": "string", "enum": ["For Sale", "For Rent"] },
+        "beds": { "type": "number" },
+        "baths": { "type": "number" },
+        "sqft": { "type": "number" },
+        "imageUrl": { "type": "string", "maxLength": 50000 },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "ownerName": { "type": "string", "maxLength": 100 },
+        "ownerEmail": { "type": "string", "maxLength": 100 },
+        "featured": { "type": "boolean" },
+        "isDemo": { "type": "boolean" },
+        "isVerified": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["title", "price", "location", "category", "status", "ownerId", "imageUrl"]
+    },
+    "ViewingBooking": {
+      "title": "ViewingBooking",
+      "description": "A scheduled viewing request for a property.",
+      "type": "object",
+      "properties": {
+        "propertyId": { "type": "string", "maxLength": 128 },
+        "propertyTitle": { "type": "string", "maxLength": 150 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userName": { "type": "string", "maxLength": 100 },
+        "userEmail": { "type": "string", "maxLength": 100 },
+        "userPhone": { "type": "string", "maxLength": 30 },
+        "date": { "type": "string", "maxLength": 30 },
+        "timeSlot": { "type": "string", "maxLength": 30 },
+        "notes": { "type": "string", "maxLength": 500 },
+        "status": { "type": "string", "enum": ["confirmed", "cancelled", "completed"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["propertyId", "userId", "userName", "userEmail", "date", "timeSlot"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information and saved preferences.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 100 },
+        "photoURL": { "type": "string", "maxLength": 1000 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "savedPropertyIds": { "type": "array" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["userId", "email"]
+    },
+    "PropertyReview": {
+      "title": "PropertyReview",
+      "description": "User reviews and star ratings for properties.",
+      "type": "object",
+      "properties": {
+        "propertyId": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userName": { "type": "string", "maxLength": 100 },
+        "userPhoto": { "type": "string", "maxLength": 1000 },
+        "rating": { "type": "number" },
+        "comment": { "type": "string", "minLength": 5, "maxLength": 1000 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["propertyId", "userId", "userName", "rating", "comment"]
+    }
+  },
+  "firestore": {
+    "/properties/{propertyId}": {
+      "schema": "Property",
+      "description": "Real estate property listings."
+    },
+    "/bookings/{bookingId}": {
+      "schema": "ViewingBooking",
+      "description": "Scheduled viewing bookings made by clients."
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User account profiles."
+    },
+    "/reviews/{reviewId}": {
+      "schema": "PropertyReview",
+      "description": "User reviews and star ratings for properties."
+    }
+  }
+}

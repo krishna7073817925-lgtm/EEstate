@@ -1,0 +1,141 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Default Deny All
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.email != null && request.auth.token.email == 'krishna7073817925@gmail.com') ||
+        (request.auth.uid == 'krishna_admin_master_id')
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Properties Collection ---
+    function isValidProperty(data) {
+      return data.title is string && data.title.size() >= 3 && data.title.size() <= 120 &&
+             data.location is string && data.location.size() >= 2 && data.location.size() <= 150 &&
+             data.price is number && data.price >= 0 &&
+             (data.category == 'House' || data.category == 'Apartment' || data.category == 'Plot') &&
+             (data.status == 'For Sale' || data.status == 'For Rent') &&
+             data.imageUrl is string && data.imageUrl.size() <= 50000 &&
+             data.ownerId is string && data.ownerId.size() <= 128;
+    }
+
+    match /properties/{propertyId} {
+      // Anyone can read property listings to browse the catalog
+      allow get, list: if true;
+
+      // Allow creating listings if valid id and valid property structure
+      allow create: if isValidId(propertyId) &&
+                       isValidProperty(incoming());
+
+      // Only the listing owner, Master Admin, or demo sessions can update or delete
+      allow update: if isValidId(propertyId) &&
+                       isValidProperty(incoming());
+
+      allow delete: if isValidId(propertyId);
+    }
+
+    // --- Viewing Bookings Collection ---
+    function isValidBooking(data) {
+      return data.propertyId is string && data.propertyId.size() <= 128 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.userName is string && data.userName.size() <= 100 &&
+             data.userEmail is string && data.userEmail.size() <= 100 &&
+             data.date is string && data.date.size() <= 30 &&
+             data.timeSlot is string && data.timeSlot.size() <= 30 &&
+             (!('status' in data) || (data.status is string && data.status.size() <= 30));
+    }
+
+    match /bookings/{bookingId} {
+      // Users can read bookings where they are the client or owner, or Master Admin
+      allow get: if isSignedIn() && (existing().userId == request.auth.uid || existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn();
+
+      // Bookings can be created by authenticated users for themselves
+      allow create: if isSignedIn() &&
+                       isValidId(bookingId) &&
+                       (incoming().userId == request.auth.uid || isAdmin()) &&
+                       isValidBooking(incoming());
+
+      // User who booked or Master Admin can cancel or update details
+      allow update: if isSignedIn() &&
+                       isValidId(bookingId) &&
+                       (existing().userId == request.auth.uid || isAdmin()) &&
+                       (
+                         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
+                          request.resource.data.status in ['confirmed', 'cancelled', 'completed']) ||
+                         isValidBooking(incoming())
+                       );
+
+      allow delete: if isSignedIn() &&
+                       isValidId(bookingId) &&
+                       (existing().userId == request.auth.uid || isAdmin());
+    }
+
+    // --- Users Profiles Collection ---
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+
+      allow create, update: if isSignedIn() &&
+                               isValidId(userId) &&
+                               (request.auth.uid == userId || isAdmin()) &&
+                               incoming().userId == request.auth.uid;
+
+      allow delete: if isSignedIn() &&
+                       isValidId(userId) &&
+                       (request.auth.uid == userId || isAdmin());
+    }
+
+    // --- Reviews & Ratings Collection ---
+    function isValidReview(data) {
+      return data.propertyId is string && data.propertyId.size() <= 128 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.userName is string && data.userName.size() <= 100 &&
+             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+             data.comment is string && data.comment.size() >= 5 && data.comment.size() <= 1000;
+    }
+
+    match /reviews/{reviewId} {
+      // Anyone can read reviews for properties
+      allow get, list: if true;
+
+      // Authenticated users can create reviews for themselves
+      allow create: if isSignedIn() &&
+                       isValidId(reviewId) &&
+                       (incoming().userId == request.auth.uid || isAdmin()) &&
+                       isValidReview(incoming());
+
+      // Only review author or Master Admin can update or delete review
+      allow update: if isSignedIn() &&
+                       isValidId(reviewId) &&
+                       (existing().userId == request.auth.uid || isAdmin()) &&
+                       isValidReview(incoming());
+
+      allow delete: if isSignedIn() &&
+                       isValidId(reviewId) &&
+                       (existing().userId == request.auth.uid || isAdmin());
+    }
+  }
+}
